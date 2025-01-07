@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build and publish rbxl
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.4.2
+
+      - name: Build rbxm
+        run: rojo build -o Framework.rbxm build.project.json
+      
+      - name: Publish to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.event.release.tag_name }} Framework.rbxm
+        shell: bash

@@ -1,0 +1,13 @@
+{
+  "name": "Framework",
+  "tree": {
+    "$className": "DataModel",
+    
+    "ReplicatedStorage": {
+      "Framework": {
+        "$className": "Folder",
+        "$path": "src"
+      }
+    }
+  }
+}

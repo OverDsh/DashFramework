@@ -1,0 +1,6 @@
+{
+    "stylua.targetReleaseVersion": "latest",
+    "robloxLsp.diagnostics.disable": [
+        "unused-function"
+    ]
+}
