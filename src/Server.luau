@@ -52,10 +52,10 @@ local Framework = {
 	State = require(DIR.State.Server),
 	Util = {
 		Promise = require(Util.Promise),
-		Signal = require(Util.Signal),	
+		Signal = require(Util.Signal),
 	},
 	IsLoaded = false,
-	Loaded = Signal.new()
+	Loaded = Signal.new(),
 }
 
 if not RunService:IsServer() then
@@ -117,12 +117,15 @@ function Framework.Start()
 				table.insert(promises, Framework.Util.Promise.try(service.Start))
 			end
 		end
-		Framework.Util.Promise.all(promises):andThen(function()
-			resolve()
-			started = true
-			Framework.IsLoaded = true
-			Framework.Loaded:Fire()
-		end):catch(reject)
+		Framework.Util.Promise
+			.all(promises)
+			:andThen(function()
+				resolve()
+				started = true
+				Framework.IsLoaded = true
+				Framework.Loaded:Fire()
+			end)
+			:catch(reject)
 	end)
 end
 
