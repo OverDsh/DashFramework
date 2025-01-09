@@ -24,7 +24,7 @@ type SharedSelf = {
 	},
 	_loaded: boolean,
 	Loaded: Signal.Signal<nil>,
-	IsLoaded: boolean
+	IsLoaded: boolean,
 } & StateManager
 
 local StateManager = {}
