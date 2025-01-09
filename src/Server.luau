@@ -54,8 +54,8 @@ local Framework = {
 		Promise = require(Util.Promise),
 		Signal = require(Util.Signal),
 	},
-	IsLoaded = false,
-	Loaded = Signal.new(),
+	IsServerLoaded = false,
+	ServerLoadedSignal = Signal.new(),
 }
 
 if not RunService:IsServer() then
@@ -122,8 +122,8 @@ function Framework.Start()
 			:andThen(function()
 				resolve()
 				started = true
-				Framework.IsLoaded = true
-				Framework.Loaded:Fire()
+				Framework.IsServerLoaded = true
+				Framework.ServerLoadedSignal:Fire()
 			end)
 			:catch(reject)
 	end)

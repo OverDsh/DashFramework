@@ -15,8 +15,16 @@ type self = {
 	_signals: {
 		[any]: Signal.Signal<any>,
 	},
+} & StateManager
+
+type SharedSelf = {
+	_state: {},
+	_signals: {
+		[any]: Signal.Signal<any>,
+	},
 	_loaded: boolean,
 	Loaded: Signal.Signal<nil>,
+	IsLoaded: boolean
 } & StateManager
 
 local StateManager = {}
@@ -41,7 +49,7 @@ local RegisterSignals = {} :: {
 	[string]: Signal.Signal<self>,
 }
 
-function StateManager.GetSharedInterface(name: string): self | nil
+function StateManager.GetSharedInterface(name: string): SharedSelf | nil
 	assert(typeof(name) == "string", "Expected a string, got " .. typeof(name))
 	if RegisteredSharedInterface[name] then
 		return RegisteredSharedInterface[name]
@@ -51,11 +59,12 @@ function StateManager.GetSharedInterface(name: string): self | nil
 	assert(sucess, "Couldn't retrieve shared interface " .. name)
 	assert(typeof(Data) == "table", "Error while retrieving shared interface " .. name)
 
-	local self = setmetatable({} :: self, StateManager)
+	local self = setmetatable({} :: SharedSelf, StateManager)
 
 	self._state = Data
 	self._signals = {}
 	self._loaded = false
+	self.IsLoaded = false
 	self.Loaded = Signal.new()
 
 	if #Data ~= 0 then
@@ -77,6 +86,7 @@ function StateManager.GetSharedInterface(name: string): self | nil
 
 		if not self._loaded then
 			self._loaded = true
+			self.IsLoaded = true
 			self.Loaded:Fire()
 		end
 	end)
