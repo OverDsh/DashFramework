@@ -54,10 +54,16 @@ jobs:
           python -c "
           import toml
 
+          # GitHub release tag (e.g., 'v0.0.3')
+          release_tag = '${{ github.event.release.tag_name }}'
+
+          # Remove 'v' prefix if present
+          version = release_tag.lstrip('v')
+
           with open('wally.toml', 'r') as file:
               data = toml.load(file)
 
-          data['package']['version'] = '${{ github.event.release.tag_name }}'
+          data['package']['version'] = version
 
           with open('wally.toml', 'w') as file:
               toml.dump(data, file)
