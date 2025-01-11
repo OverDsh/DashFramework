@@ -1,0 +1,16 @@
+[package]
+name = "overdsh/dash-framework"
+description = "A simple framework inspired by Knit."
+
+license = "GPL-3.0" 
+authors = ["OverDsh"]
+
+version = "0.0.2"
+
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+exclude = ["**"]
+include = ["src", "src/*", "default.project.json", "wally.toml", "wally.lock"]
+
+[dependencies]
