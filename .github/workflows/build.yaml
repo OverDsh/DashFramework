@@ -41,12 +41,27 @@ jobs:
       - name: Login to wally
         run: wally login --token ${{ secrets.WALLY_AUTH }}
       
-      - name: Change wally.toml version
-        uses: ciiiii/toml-editor@1.0.0
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          file: wally.toml
-          key: package.version
-          value: ${{ github.event.release.tag_name }}
+          python-version: '3.x'
+
+      - name: Install toml library
+        run: pip install toml
+
+      - name: Modify wally.toml
+        run: |
+          python -c "
+          import toml
+
+          with open('wally.toml', 'r') as file:
+              data = toml.load(file)
+
+          data['package']['version'] = '${{ github.event.release.tag_name }}'
+
+          with open('wally.toml', 'w') as file:
+              toml.dump(data, file)
+          "
 
       - name: Publish to wally
         run: wally publish
