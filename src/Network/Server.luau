@@ -8,10 +8,14 @@ local Network = {
 	Decompress = require(script.Parent.Modules.Compress).decompress,
 }
 
-if not RunService:IsServer() then
-	script:Destroy()
-	return Network
-end
+export type ServerNetwork = {
+	Fire: (remoteName: string, player: Player, ...any) -> nil,
+	Invoke: (remoteName: string, player: Player, ...any) -> any,
+	FireAll: (remoteName: string, ...any) -> nil,
+	FirePlayerFiltered: (remoteName: string, filter: (player: Player) -> boolean, ...any) -> nil,
+	OnEvent: (remoteName: string) -> Signal.Signal<...any>,
+	OnInvoke: (remoteName: string, callback: (...any) -> any) -> nil,
+}
 
 --[[
 a: Simple request from client
@@ -47,6 +51,10 @@ local invokePromises = {} :: {
 		},
 	},
 }
+
+if not RunService:IsServer() then
+	return {} :: ServerNetwork
+end
 
 local MainReliable: RemoteEvent = script.Parent.Remotes:WaitForChild("__MainReliable")
 local FlushQueueThread: thread

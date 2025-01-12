@@ -7,14 +7,6 @@ local Network = {
 	Decompress = require(script.Parent.Modules.Compress).decompress,
 }
 
-if not RunService:IsClient() then
-	script:Destroy()
-	return Network
-end
-if script.Parent:FindFirstChild("Server") then
-	script.Parent:FindFirstChild("Server"):Destroy()
-end
-
 --[[
 a: Simple request from client
 b: Simple request from server
@@ -27,6 +19,13 @@ f: Response from server
 -When a packet d is recieved, client sends a packet e
 
 ]]
+
+export type ClientNetwork = {
+	Fire: (remoteName: string, ...any) -> nil,
+	Invoke: (remoteName: string, ...any) -> any,
+	OnEvent: (remoteName: string) -> Signal.Signal<...any>,
+	OnInvoke: (remoteName: string, callback: (...any) -> any) -> nil,
+}
 
 type Packet = {
 	PacketType: string,
@@ -47,6 +46,10 @@ local invokePromises = {} :: {
 		},
 	},
 }
+
+if RunService:IsServer() then
+	return {} :: ClientNetwork
+end
 
 local MainReliable: RemoteEvent = script.Parent.Remotes:WaitForChild("__MainReliable")
 local FlushQueueThread: thread

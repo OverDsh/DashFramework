@@ -1,8 +1,7 @@
 --!strict
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Signal = require(ReplicatedStorage.Framework.Network.Util.Signal)
+local Signal = require(script.Parent.Util.Signal)
 --[[
 ^P@@@@@@@@@@@@@@&&&&&&&&&&&&J.     7B@@&&&&&&&&&&&&&&&&&&&&&&&B!
   ~P@@@@@@@@@@@@@@@@@@@@@@@@@#J:    .?B@@@@@@@@@@@@@@@@@@@@@@@@@G!
@@ -60,20 +59,23 @@ local Framework = {
 	ClientLoadedSignal = Signal.new(),
 }
 
-if not RunService:IsClient() then
-	script:Destroy()
-	return Framework
-end
-if script.Parent:FindFirstChild("Server") then
-	script.Parent:FindFirstChild("Server"):Destroy()
-end
-
-local started = false
-
 type Controller = {
 	Init: ((...any) -> ...unknown)?,
 	Start: ((...any) -> ...unknown)?,
 }
+
+export type Client = {
+	Start: () -> ...any,
+	GetController: (name: string) -> Controller,
+	AddControllerFolder: (dir: Instance, loadDescendants: boolean?) -> nil,
+	LoadController: (module: ModuleScript) -> nil,
+} & typeof(Framework)
+
+if not RunService:IsClient() then
+	return {} :: Client
+end
+
+local started = false
 
 local controllers = {} :: { [string]: Controller }
 

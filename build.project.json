@@ -1,6 +1,12 @@
 {
   "name": "Framework",
   "tree": {
-    "$path": "src"
+    "$className": "DataModel",
+    
+    "ReplicatedStorage": {
+      "Framework": {
+        "$path": "src"
+      }
+    }
   }
 }

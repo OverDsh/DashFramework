@@ -2,12 +2,16 @@ local RunService = game:GetService("RunService")
 local Signal = require(script.Parent.Util.Signal)
 local Network = require(script.Parent.Parent.Network.Client)
 
-type StateManager = {
-	SetKey: (self: StateManager, key: any, val: any) -> nil,
-	DeleteKey: (self: StateManager, key: any) -> nil,
-	UpdateKey: (self: StateManager, key: any, callback: (any) -> any) -> nil,
-	GetKey: (self: StateManager, key: any) -> any,
-	GetKeyChangedSignal: (self: StateManager, key: any) -> Signal.Signal<any>,
+export type StateManagerClient = {
+	SetKey: (self: StateManagerClient, key: any, val: any) -> nil,
+	DeleteKey: (self: StateManagerClient, key: any) -> nil,
+	UpdateKey: (self: StateManagerClient, key: any, callback: (any) -> any) -> nil,
+	GetKey: (self: StateManagerClient, key: any) -> any,
+	GetKeyChangedSignal: (self: StateManagerClient, key: any) -> Signal.Signal<any>,
+	GetSharedInterface: (name: string) -> SharedSelf | nil,
+	RegisterStateInterface: (name: string, initState: {}) -> self | nil,
+	GetStateInterface: (name: string) -> self | nil,
+	GetStateInterfaceAddedSignal: (name: string) -> Signal.Signal<self>,
 }
 
 type self = {
@@ -15,7 +19,7 @@ type self = {
 	_signals: {
 		[any]: Signal.Signal<any>,
 	},
-} & StateManager
+} & StateManagerClient
 
 type SharedSelf = {
 	_state: {},
@@ -25,18 +29,14 @@ type SharedSelf = {
 	_loaded: boolean,
 	Loaded: Signal.Signal<nil>,
 	IsLoaded: boolean,
-} & StateManager
+} & StateManagerClient
 
-local StateManager = {}
-StateManager.__index = StateManager
+if RunService:IsServer() then
+	return {} :: StateManagerClient
+end
 
-if not RunService:IsClient() then
-	script:Destroy()
-	return StateManager
-end
-if script.Parent:FindFirstChild("Server") then
-	script.Parent:FindFirstChild("Server"):Destroy()
-end
+local StateManagerClient = {}
+StateManagerClient.__index = StateManagerClient
 
 local RegisteredStateInterface = {} :: {
 	[string]: self,
@@ -49,7 +49,7 @@ local RegisterSignals = {} :: {
 	[string]: Signal.Signal<self>,
 }
 
-function StateManager.GetSharedInterface(name: string): SharedSelf | nil
+function StateManagerClient.GetSharedInterface(name: string): SharedSelf | nil
 	assert(typeof(name) == "string", "Expected a string, got " .. typeof(name))
 	if RegisteredSharedInterface[name] then
 		return RegisteredSharedInterface[name]
@@ -59,7 +59,7 @@ function StateManager.GetSharedInterface(name: string): SharedSelf | nil
 	assert(sucess, "Couldn't retrieve shared interface " .. name)
 	assert(typeof(Data) == "table", "Error while retrieving shared interface " .. name)
 
-	local self = setmetatable({} :: SharedSelf, StateManager)
+	local self = setmetatable({} :: SharedSelf, StateManagerClient)
 
 	self._state = Data
 	self._signals = {}
@@ -95,11 +95,11 @@ function StateManager.GetSharedInterface(name: string): SharedSelf | nil
 	return self
 end
 
-function StateManager.RegisterStateInterface(name: string, initState: {}): self | nil
+function StateManagerClient.RegisterStateInterface(name: string, initState: {}): self | nil
 	assert(typeof(initState) == "table", "Expected a table, got " .. typeof(initState))
 	assert(not RegisteredStateInterface[name], `StateInterface {name} already exists`)
 
-	local self = setmetatable({} :: self, StateManager)
+	local self = setmetatable({} :: self, StateManagerClient)
 
 	self._state = initState
 	self._signals = {}
@@ -111,13 +111,13 @@ function StateManager.RegisterStateInterface(name: string, initState: {}): self 
 	return self
 end
 
-function StateManager.GetStateInterface(name: string): self | nil
+function StateManagerClient.GetStateInterface(name: string): self | nil
 	assert(typeof(name) == "string", "Expected a string, got " .. typeof(name))
 	assert(RegisteredStateInterface[name], `StateInterface {name} doesn't exist`)
 	return RegisteredStateInterface[name]
 end
 
-function StateManager.GetStateInterfaceAddedSignal(name: string): Signal.Signal<self>
+function StateManagerClient.GetStateInterfaceAddedSignal(name: string): Signal.Signal<self>
 	local AddedSignal = Signal.new()
 	if RegisteredStateInterface[name] then
 		AddedSignal:FireDeferred(RegisteredStateInterface[name])
@@ -130,7 +130,7 @@ function StateManager.GetStateInterfaceAddedSignal(name: string): Signal.Signal<
 	end
 end
 
-function StateManager:SetKey(key, val)
+function StateManagerClient:SetKey(key, val)
 	self = self :: self
 	local signal = self._signals[key]
 	if Signal.Is(signal) then
@@ -140,7 +140,7 @@ function StateManager:SetKey(key, val)
 	self._state[key] = val
 end
 
-function StateManager:DeleteKey(key)
+function StateManagerClient:DeleteKey(key)
 	self = self :: self
 
 	if self._signals[key] then
@@ -150,7 +150,7 @@ function StateManager:DeleteKey(key)
 	self:SetKey(key, nil)
 end
 
-function StateManager:UpdateKey(key, callback: (any) -> any)
+function StateManagerClient:UpdateKey(key, callback: (any) -> any)
 	self = self :: self
 	local old = self:GetKey(key)
 	if not old then
@@ -161,13 +161,13 @@ function StateManager:UpdateKey(key, callback: (any) -> any)
 	self:SetKey(key, newVal)
 end
 
-function StateManager:GetKey(key): any | nil
+function StateManagerClient:GetKey(key): any | nil
 	self = self :: self
 	assert(self._state[key], `Key {key} doesn't exist`)
 	return self._state[key]
 end
 
-function StateManager:GetKeyChangedSignal(key): Signal.Signal<any>
+function StateManagerClient:GetKeyChangedSignal(key): Signal.Signal<any>
 	self = self :: self
 	if not self._signals[key] then
 		self._signals[key] = Signal.new()
@@ -176,8 +176,8 @@ function StateManager:GetKeyChangedSignal(key): Signal.Signal<any>
 	return self._signals[key]
 end
 
-function StateManager.Is(manager): boolean
-	return typeof(manager) == "table" and getmetatable(manager) == StateManager
+function StateManagerClient.Is(manager): boolean
+	return typeof(manager) == "table" and getmetatable(manager) == StateManagerClient
 end
 
-return StateManager
+return StateManagerClient

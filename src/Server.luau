@@ -1,7 +1,6 @@
 --!strict
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Signal = require(ReplicatedStorage.Framework.Network.Util.Signal)
+local Signal = require(script.Parent.Util.Signal)
 --[[
 ^P@@@@@@@@@@@@@@&&&&&&&&&&&&J.     7B@@&&&&&&&&&&&&&&&&&&&&&&&B!
   ~P@@@@@@@@@@@@@@@@@@@@@@@@@#J:    .?B@@@@@@@@@@@@@@@@@@@@@@@@@G!
@@ -58,16 +57,23 @@ local Framework = {
 	ServerLoadedSignal = Signal.new(),
 }
 
-if not RunService:IsServer() then
-	script:Destroy()
-	return Framework
-end
-
-local started = false
 type Service = {
 	Init: ((...any) -> nil)?,
 	Start: ((...any) -> nil)?,
 }
+
+export type Server = {
+	Start: () -> ...any,
+	GetService: (name: string) -> Service,
+	AddServiceFolder: (dir: Instance, loadDescendants: boolean?) -> nil,
+	LoadService: (module: ModuleScript) -> nil,
+} & typeof(Framework)
+
+if not RunService:IsServer() then
+	return {} :: Server
+end
+
+local started = false
 local services = {} :: { [string]: Service }
 
 function Framework.LoadService(module: ModuleScript)

@@ -4,11 +4,6 @@ local Network = require(script.Parent.Parent.Parent.Network.Server)
 local ClientInterface = {}
 ClientInterface.__index = ClientInterface
 
-if RunService:IsClient() then
-	warn("Cant create ClientInterface on client")
-	return ClientInterface
-end
-
 local Signal = require(script.Parent.Parent.Util.Signal)
 
 export type ClientManager = {
@@ -27,6 +22,10 @@ type self = {
 	_signals: { [Player]: { [any]: Signal.Signal<any> } },
 	_name: string,
 } & ClientManager
+
+if not RunService:IsServer() then
+	return {} :: ClientManager
+end
 
 local RegisteredInterfaces = {} :: { [string]: self }
 
