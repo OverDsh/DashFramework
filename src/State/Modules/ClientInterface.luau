@@ -10,16 +10,19 @@ export type ClientManager = {
 	GetPlayerData: (self: ClientManager, player: Player) -> { any },
 	SetPlayerData: (self: ClientManager, player: Player, val: {}) -> nil,
 	DeletePlayerData: (self: ClientManager, player: Player) -> nil,
+	UpdatePlayerData: (self: ClientManager, player: Player, callback: (any) -> any) -> nil,
 	SetPlayerKey: (self: ClientManager, player: Player, key: any, val: any) -> nil,
 	DeletePlayerKey: (self: ClientManager, player: Player, key: any) -> nil,
 	UpdatePlayerKey: (self: ClientManager, player: Player, key: any, callback: (any) -> any) -> nil,
 	GetPlayerKey: (self: ClientManager, player: Player, key: any) -> any,
 	GetPlayerKeyChangedSignal: (self: ClientManager, player: Player, key: any) -> Signal.Signal<any>,
+	GetPlayerDataChangedSignal: (self: ClientManager, player: Player) -> Signal.Signal<any>,
 }
 
 type self = {
 	_state: {},
 	_signals: { [Player]: { [any]: Signal.Signal<any> } },
+	_dataChangedSignal: { [Player]: Signal.Signal<any> },
 	_name: string,
 } & ClientManager
 
@@ -37,6 +40,7 @@ function ClientInterface.new(name: string): self | nil
 	self._name = name
 	self._state = {}
 	self._signals = {}
+	self._dataChangedSignal = {}
 
 	return self
 end
@@ -61,6 +65,9 @@ function ClientInterface:SetPlayerData(player: Player, val: {})
 	end
 
 	Network.Fire("_FRAMEWORK/UpdateSharedInterface-" .. self._name, player, val)
+	if Signal.Is(self._dataChangedSignal[player]) then
+		self._dataChangedSignal[player]:Fire(val)
+	end
 	self._state[player] = val
 end
 
@@ -75,8 +82,26 @@ function ClientInterface:DeletePlayerData(player: Player)
 			v:Destroy()
 		end
 	end
+	if Signal.Is(self._dataChangedSignal[player]) then
+		self._dataChangedSignal[player]:Destroy()
+	end
+	self._dataChangedSignal[player] = nil
 	self._signals[player] = {}
 	self:SetPlayerData(player, {})
+end
+
+function ClientInterface:UpdatePlayerData(player: Player, callback: (old: any) -> any)
+	if typeof(player) ~= "Instance" or not player:IsDescendantOf(Players) then
+		return
+	end
+	self = self :: self
+	local old = self:GetPlayerData(player)
+	if not old then
+		return
+	end
+
+	local newVal = callback(old)
+	self:SetPlayerData(player, newVal)
 end
 
 function ClientInterface:SetPlayerKey(player: Player, key, val)
@@ -102,6 +127,9 @@ function ClientInterface:SetPlayerKey(player: Player, key, val)
 	Network.Fire("_FRAMEWORK/UpdateSharedInterface-" .. self._name, player, changes)
 
 	self._state[player][key] = val
+	if Signal.Is(self._dataChangedSignal[player]) then
+		self._dataChangedSignal[player]:Fire(self:GetPlayerData(player))
+	end
 end
 
 function ClientInterface:DeletePlayerKey(player: Player, key)
@@ -161,6 +189,18 @@ function ClientInterface:GetPlayerKeyChangedSignal(player: Player, key): Signal.
 	end
 
 	return self._signals[player][key]
+end
+
+function ClientInterface:GetPlayerDataChangedSignal(player: Player): Signal.Signal<any> | nil
+	if typeof(player) ~= "Instance" or not player:IsDescendantOf(Players) then
+		return
+	end
+	self = self :: self
+	if not Signal.Is(self._dataChangedSignal[player]) then
+		self._dataChangedSignal[player] = Signal.new()
+	end
+
+	return self._dataChangedSignal[player]
 end
 
 return ClientInterface
