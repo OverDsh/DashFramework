@@ -45,11 +45,16 @@ function StateManagerServer.RegisterStateInterface(name: string, initState: {}):
 
 	self._state = initState
 	self._signals = {}
+
+	--Create a new ClientInterface for each Server StateInterface
 	local NewClientInterface = ClientInterface.new(name)
 	assert(ClientInterface, "Couldn't generate ClientInterface for " .. name)
 	self.Client = NewClientInterface
 
+	--Add StateInterface to array to be retrieved later
 	RegisteredStateInterface[name] = self
+
+	--Check if there's a listener to InterfaceAddedSignal of current interface and notify it
 	if RegisterSignals[name] then
 		RegisterSignals[name]:Fire(self)
 	end
@@ -66,13 +71,12 @@ function StateManagerServer.GetStateInterface(name: string): self | nil
 end
 
 function StateManagerServer.GetStateInterfaceAddedSignal(name: string): Signal.Signal<self>
-	local AddedSignal = Signal.new()
-	if RegisteredStateInterface[name] then
-		AddedSignal:FireDeferred(RegisteredStateInterface[name])
-		return AddedSignal
-	elseif RegisterSignals[name] then
+	if RegisterSignals[name] then
+		--If the signal already exists, return it
 		return RegisterSignals[name]
 	else
+		--Create a new signal and add it to an array to be picked up by the RegisterStateInterface function
+		local AddedSignal = Signal.new()
 		RegisterSignals[name] = AddedSignal
 		return AddedSignal
 	end
